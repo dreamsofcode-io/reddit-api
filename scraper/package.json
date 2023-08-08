@@ -1,0 +1,16 @@
+{
+  "name": "reddit-api",
+  "version": "1.0.0",
+  "description": "A low cost reddit api",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-sqs": "^3.386.0",
+    "playwright": "^1.36.2",
+    "winston": "^3.10.0"
+  }
+}
