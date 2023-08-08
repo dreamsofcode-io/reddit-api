@@ -1,3 +1,4 @@
+const { BrowserManager } = require("./manager");
 const playwright = require("playwright");
 const logger = require("./logger");
 const queue = require("./sqs");
@@ -26,7 +27,7 @@ async function parseComment(e) {
   return comments;
 }
 
-async function getPostData({ page, post }) {
+async function parsePostData({ page, post }) {
   logger.info("getting details for post", { post: post });
 
   await page.goto(post.url);
@@ -90,12 +91,8 @@ async function getPostsOnPage(page) {
 }
 
 async function main() {
-  const browser = await playwright.chromium.launch({
-    headless: false,
-  });
-
-  const context = await browser.newContext();
-  const page = await context.newPage();
+  const manager = new BrowserManager();
+  const page = await manager.newPage();
 
   await page.goto("https://old.reddit.com/r/programming/new/");
   logger.info("connected!");
@@ -127,12 +124,10 @@ async function main() {
 
   posts = posts.filter((post) => post.timestamp > cutoff);
 
-  let data = [];
-
-  for (const post of posts) {
-    let postData = await getPostData({ post, page });
-    data.push(postData);
-  }
+  const data = await manager.handlePostsData({
+    posts: posts,
+    parser: parsePostData,
+  });
 
   const nowStr = new Date().toISOString();
 
@@ -140,7 +135,7 @@ async function main() {
 
   logger.info(`got ${data.length} posts`);
 
-  await browser.close();
+  await manager.close();
 }
 
 if (require.main === module) {
