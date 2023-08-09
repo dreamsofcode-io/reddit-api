@@ -1,4 +1,3 @@
-const { BrowserManager } = require("./manager");
 const playwright = require("playwright");
 const logger = require("./logger");
 const queue = require("./sqs");
@@ -27,7 +26,7 @@ async function parseComment(e) {
   return comments;
 }
 
-async function parsePostData({ page, post }) {
+async function getPostData({ page, post }) {
   logger.info("getting details for post", { post: post });
 
   await page.goto(post.url);
@@ -44,13 +43,7 @@ async function parsePostData({ page, post }) {
   let title = await page.$eval("a.title", (el) => el.innerText);
   let points = parseInt(await sitetable.$(".score.unvoted").innerText);
   let text = await sitetable.$("div.usertext-body").innerText;
-  let comments = [];
-
-  try {
-    comments = await parseComment(await page.$("div.commentarea"));
-  } catch (e) {
-    logger.error("error parsing comments", { error: e });
-  }
+  let comments = await parseComment(await page.$("div.commentarea"));
 
   return {
     id,
@@ -97,8 +90,12 @@ async function getPostsOnPage(page) {
 }
 
 async function main() {
-  const manager = new BrowserManager();
-  const page = await manager.getPage();
+  const browser = await playwright.chromium.launch({
+    headless: false,
+  });
+
+  const context = await browser.newContext();
+  const page = await context.newPage();
 
   await page.goto("https://old.reddit.com/r/programming/new/");
   logger.info("connected!");
@@ -130,10 +127,12 @@ async function main() {
 
   posts = posts.filter((post) => post.timestamp > cutoff);
 
-  const data = await manager.handlePostsData({
-    posts: posts,
-    parser: parsePostData,
-  });
+  let data = [];
+
+  for (const post of posts) {
+    let postData = await getPostData({ post, page });
+    data.push(postData);
+  }
 
   const nowStr = new Date().toISOString();
 
@@ -141,7 +140,7 @@ async function main() {
 
   logger.info(`got ${data.length} posts`);
 
-  await manager.close();
+  await browser.close();
 }
 
 if (require.main === module) {
