@@ -14,7 +14,7 @@ async function getDataForPosts(posts) {
       const data = await getPostData({ page, post });
       await browser.close();
       return data;
-    })
+    }),
   );
 }
 
@@ -101,7 +101,7 @@ async function getPostsOnPage(page) {
     const timestamp = Date.parse(await time.getAttribute("datetime"));
     const author = await element.$eval(".author", (el) => el.innerText);
     const url = await element.$eval("a.comments", (el) =>
-      el.getAttribute("href")
+      el.getAttribute("href"),
     );
 
     posts.push({ id, subreddit, timestamp, author, url });
@@ -160,3 +160,8 @@ async function main() {
 if (require.main === module) {
   main();
 }
+
+exports.handler = async function (event, context) {
+  await main();
+  return { success: true };
+};
