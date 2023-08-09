@@ -44,7 +44,13 @@ async function parsePostData({ page, post }) {
   let title = await page.$eval("a.title", (el) => el.innerText);
   let points = parseInt(await sitetable.$(".score.unvoted").innerText);
   let text = await sitetable.$("div.usertext-body").innerText;
-  let comments = await parseComment(await page.$("div.commentarea"));
+  let comments = [];
+
+  try {
+    comments = await parseComment(await page.$("div.commentarea"));
+  } catch (e) {
+    logger.error("error parsing comments", { error: e });
+  }
 
   return {
     id,
@@ -92,7 +98,7 @@ async function getPostsOnPage(page) {
 
 async function main() {
   const manager = new BrowserManager();
-  const page = await manager.newPage();
+  const page = await manager.getPage();
 
   await page.goto("https://old.reddit.com/r/programming/new/");
   logger.info("connected!");
