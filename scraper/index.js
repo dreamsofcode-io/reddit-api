@@ -2,6 +2,22 @@ const playwright = require("playwright");
 const logger = require("./logger");
 const queue = require("./sqs");
 
+const connectionUrl = process.env.CONNECTION_URL;
+
+async function getDataForPosts(posts) {
+  return await Promise.all(
+    posts.map(async (post) => {
+      let browser = await playwright.chromium.connectOverCDP(connectionUrl);
+      let context = await browser.newContext();
+      let page = await context.newPage();
+
+      const data = await getPostData({ page, post });
+      await browser.close();
+      return data;
+    })
+  );
+}
+
 async function parseComment(e) {
   const things = await e.$$("> .sitetable > .thing");
   let comments = [];
@@ -43,7 +59,12 @@ async function getPostData({ page, post }) {
   let title = await page.$eval("a.title", (el) => el.innerText);
   let points = parseInt(await sitetable.$(".score.unvoted").innerText);
   let text = await sitetable.$("div.usertext-body").innerText;
-  let comments = await parseComment(await page.$("div.commentarea"));
+  let comments = [];
+  try {
+    comments = await parseComment(await page.$("div.commentarea"));
+  } catch (e) {
+    logger.error("error parsing comments", { error: e });
+  }
 
   return {
     id,
@@ -90,9 +111,7 @@ async function getPostsOnPage(page) {
 }
 
 async function main() {
-  const browser = await playwright.chromium.launch({
-    headless: false,
-  });
+  const browser = await playwright.chromium.connectOverCDP(connectionUrl);
 
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -125,22 +144,17 @@ async function main() {
     await page.goto(nextPageURL);
   }
 
+  await browser.close();
+
   posts = posts.filter((post) => post.timestamp > cutoff);
 
-  let data = [];
-
-  for (const post of posts) {
-    let postData = await getPostData({ post, page });
-    data.push(postData);
-  }
+  const data = await getDataForPosts(posts);
 
   const nowStr = new Date().toISOString();
 
   await queue.publish(data.map((post) => ({ ...post, scrapedAt: nowStr })));
 
   logger.info(`got ${data.length} posts`);
-
-  await browser.close();
 }
 
 if (require.main === module) {
