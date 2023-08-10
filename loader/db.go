@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -37,12 +38,15 @@ func NewDatabase(ctx context.Context) (*Database, error) {
 func (d *Database) AddPostRecord(ctx context.Context, post PostRecord) error {
 	item, err := attributevalue.MarshalMap(post)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal post: %w", err)
 	}
 
 	_, err = d.client.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: aws.String(d.postTableName), Item: item,
 	})
+	if err != nil {
+		return fmt.Errorf("failed to put item: %w", err)
+	}
 
 	return nil
 }
@@ -50,12 +54,15 @@ func (d *Database) AddPostRecord(ctx context.Context, post PostRecord) error {
 func (d *Database) AddCommentRecord(ctx context.Context, comment CommentRecord) error {
 	item, err := attributevalue.MarshalMap(comment)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal comment: %w", err)
 	}
 
 	_, err = d.client.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: aws.String(d.commentTableName), Item: item,
 	})
+	if err != nil {
+		return fmt.Errorf("failed to put item: %w", err)
+	}
 
 	return nil
 }

@@ -27,7 +27,7 @@ func addPost(ctx context.Context, post Post, db *Database) error {
 	postRecord := PostRecord{
 		ID:        post.ID,
 		Subreddit: post.Subreddit,
-		Timestamp: uint64(post.Timestamp.Unix()),
+		Timestamp: post.TimestampMillis / 1000,
 		Data:      string(postData),
 	}
 
@@ -51,6 +51,7 @@ func handle(ctx context.Context, event events.SQSEvent, db *Database) error {
 	for _, record := range event.Records {
 		var post Post
 		if err := json.Unmarshal([]byte(record.Body), &post); err != nil {
+			fmt.Println("Failed to unmarshal post: ", record.Body)
 			return fmt.Errorf("failed to unmarshal post: %w", err)
 		}
 
