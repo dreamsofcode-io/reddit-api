@@ -16,7 +16,7 @@ EOF
 }
 
 resource "aws_iam_policy" "reddit_scraper_lambda_policy" {
-  name        = "lambda-sqs-policy"
+  name        = "scraper-lambda-policy"
   description = "IAM policy for Lambda to access reddit SQS"
 
   policy = <<EOF
@@ -45,4 +45,66 @@ resource "aws_iam_role_policy_attachment" "reddit_scraper_lambda_basic_execution
 resource "aws_iam_role_policy_attachment" "reddit_scraper_lambda_policy_attachment" {
   role       = aws_iam_role.reddit_scraper_lambda_role.name
   policy_arn = aws_iam_policy.reddit_scraper_lambda_policy.arn
+}
+
+# Loader lambda
+resource "aws_iam_role" "reddit_loader_lambda_role" {
+  name = "reddit-loader-lambda-role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": "sts:AssumeRole",
+    "Principal": {
+      "Service": "lambda.amazonaws.com"
+    }
+  }]
+}
+EOF
+}
+
+resource "aws_iam_policy" "reddit_loader_lambda_policy" {
+  name        = "loader-lambda-sqs-policy"
+  description = "IAM policy for Loader Lambda to access SQS and dynamodb"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem"
+      ],
+      "Resource": [
+        "${aws_dynamodb_table.posts_table.arn}",
+        "${aws_dynamodb_table.comments_table.arn}"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes"
+      ],
+      "Resource": "${aws_sqs_queue.data_queue.arn}"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "reddit_loader_lambda_basic_execution" {
+  role       = aws_iam_role.reddit_loader_lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy_attachment" "reddit_loader_lambda_policy_attachment" {
+  role       = aws_iam_role.reddit_loader_lambda_role.name
+  policy_arn = aws_iam_policy.reddit_loader_lambda_policy.arn
 }
