@@ -45,7 +45,7 @@ resource "aws_lambda_function" "scraper_lambda" {
 resource "aws_cloudwatch_event_rule" "every_hour" {
     name = "every-hour"
     description = "Fires every hour"
-    schedule_expression = "rate(1 hour)"
+    schedule_expression = "cron(0 * * * ? *)"
 }
 
 resource "aws_cloudwatch_event_target" "run_scraper" {
