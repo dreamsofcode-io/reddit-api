@@ -1,21 +1,58 @@
 const playwright = require("playwright");
 const logger = require("./logger");
 const queue = require("./sqs");
+const isLambda = require("is-lambda");
+const chromium = require("@sparticuz/chromium");
 
 const connectionUrl = process.env.CONNECTION_URL;
 
-async function getDataForPosts(posts) {
+const newBrowser = async () => {
+  if (connectionUrl) {
+    return playwright.chromium.connectOverCDP(connectionUrl);
+  }
+
+  if (isLambda) {
+    chromium.setHeadlessMode = true;
+    chromium.setGraphicsMode = false;
+
+    return playwright.chromium.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    });
+  }
+
+  return playwright.chromium.launch();
+};
+
+async function getDataForPostsConcurrently(posts) {
   return await Promise.all(
     posts.map(async (post) => {
-      let browser = await playwright.chromium.connectOverCDP(connectionUrl);
-      let context = await browser.newContext();
-      let page = await context.newPage();
+      const browser = await newBrowser();
+      const context = await browser.newContext();
+      const page = await browser.newPage();
 
       const data = await getPostData({ page, post });
       await browser.close();
-      return data;
+
+      const nowStr = new Date().toISOString();
+      await queue.publishOne({
+        ...data,
+        scrapedAt: nowStr,
+      });
     }),
   );
+}
+
+async function getDataForPosts(posts, page) {
+  let data = [];
+  for (const post of posts) {
+    let postData = await getPostData({ page, post });
+    data.push(postData);
+  }
+
+  const nowStr = new Date().toISOString();
+  await queue.publish(data.map((post) => ({ ...post, scrapedAt: nowStr })));
 }
 
 async function parseComment(e) {
@@ -111,8 +148,10 @@ async function getPostsOnPage(page) {
 }
 
 async function main() {
-  const browser = await playwright.chromium.connectOverCDP(connectionUrl);
+  console.log("launching browser...");
+  const browser = await newBrowser();
 
+  console.log("connecting...");
   const context = await browser.newContext();
   const page = await context.newPage();
 
@@ -144,15 +183,21 @@ async function main() {
     await page.goto(nextPageURL);
   }
 
-  await browser.close();
-
   posts = posts.filter((post) => post.timestamp > cutoff);
 
-  const data = await getDataForPosts(posts);
+  let data = [];
+  for (const post of posts) {
+    let postData = await getPostData({ page, post });
+    data.push(postData);
+  }
 
-  const nowStr = new Date().toISOString();
-
-  await queue.publish(data.map((post) => ({ ...post, scrapedAt: nowStr })));
+  if (connectionUrl) {
+    await browser.close();
+    await getDataForPostsConcurrently(posts);
+  } else {
+    await getDataForPosts(posts, page);
+    await browser.close();
+  }
 
   logger.info(`got ${data.length} posts`);
 }
@@ -162,6 +207,18 @@ if (require.main === module) {
 }
 
 exports.handler = async function (event, context) {
-  await main();
+  try {
+    await main();
+  } catch (e) {
+    // Catch all errors so that the function doesn't retry
+    console.log(e);
+    logger.error("error scraping", { error: e });
+    return { success: false };
+  }
   return { success: true };
+};
+
+const bytesForPage = async (page) => {
+  const content = await page.content();
+  return Buffer.byteLength(content, "utf8");
 };

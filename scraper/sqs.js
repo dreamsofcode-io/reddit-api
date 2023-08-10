@@ -12,6 +12,16 @@ async function publishChunk(chunk) {
   await client.send(command);
 }
 
+exports.publishOne = async function (post) {
+  const command = new SendMessageCommand({
+    QueueUrl: queueURL,
+    MessageBody: JSON.stringify(msg),
+    Id: post.id,
+  });
+
+  await client.send(command);
+};
+
 exports.publish = async function (posts) {
   const msgs = posts.map((post) => ({
     Id: post.id,
