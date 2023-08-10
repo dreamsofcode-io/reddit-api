@@ -23,7 +23,7 @@ data "archive_file" "scraper_zip" {
 
 resource "aws_lambda_function" "scraper_lambda" {
   function_name    = "reddit-scraper"
-  s3_bucket        = aws_s3_bucket.scraper_image_bucket.id
+  s3_bucket        = aws_s3_bucket.reddit-api-binary-bucket.id
   s3_key           = aws_s3_object.scraper_upload.key
   runtime          = "nodejs18.x"
   handler          = "index.handler"
@@ -62,19 +62,8 @@ resource "aws_lambda_permission" "allow_cloudwatch_to_call_scraper" {
     source_arn = aws_cloudwatch_event_rule.every_hour.arn
 }
 
-resource "random_pet" "lambda_bucket_name" {
-  prefix = "dreamsofcode"
-  length = 2
-}
-
-resource "aws_s3_bucket" "scraper_image_bucket" {
-  bucket = "reddit-scraper-${random_pet.lambda_bucket_name.id}"
-
-  tags = local.tags
-}
-
 resource "aws_s3_object" "scraper_upload" {
-  bucket = aws_s3_bucket.scraper_image_bucket.id
+  bucket = aws_s3_bucket.reddit-api-binary-bucket.id
   key    = "scraper.zip"
   source = data.archive_file.scraper_zip.output_path
   etag   = data.archive_file.scraper_zip.output_base64sha256

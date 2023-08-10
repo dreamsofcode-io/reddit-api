@@ -69,9 +69,15 @@ async function parseComment(e) {
     let comment = isDeleted
       ? ""
       : await thing.$eval("div.md", (el) => el.innerText.trim());
-    let points = isDeleted
+    let pointsText = isDeleted
       ? ""
-      : await thing.$eval("span.score", (el) => el.innerText.trim());
+      : await thing.$eval(
+          "span.score",
+          (el) => el.innerText.trim().split(" ")[0],
+        );
+
+    let points = parseInt(pointsText);
+    points = isNaN(points) ? 0 : points;
 
     comments.push({ author, time, comment, points, children, isDeleted });
   }
@@ -111,7 +117,8 @@ async function getPostData({ page, post }) {
     isPromoted,
     isGallery,
     title,
-    timestamp: post.timestamp,
+    timestamp: post.dt,
+    timestamp_millis: post.timestamp,
     author: post.author,
     url: post.url,
     points: isNaN(points) ? 0 : points,
@@ -135,13 +142,14 @@ async function getPostsOnPage(page) {
       continue;
     }
 
-    const timestamp = Date.parse(await time.getAttribute("datetime"));
+    const dt = await time.getAttribute("datetime");
+    const timestamp = Date.parse(dt);
     const author = await element.$eval(".author", (el) => el.innerText);
     const url = await element.$eval("a.comments", (el) =>
       el.getAttribute("href"),
     );
 
-    posts.push({ id, subreddit, timestamp, author, url });
+    posts.push({ id, subreddit, dt, timestamp, author, url });
   }
 
   return posts;
