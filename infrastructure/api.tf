@@ -22,13 +22,24 @@ data "archive_file" "api_zip" {
 
 resource "aws_lambda_permission" "apigw" {
   statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
+  action        = "lambda:invokefunction"
   function_name = "${aws_lambda_function.api.function_name}"
   principal     = "apigateway.amazonaws.com"
 
-  # The /*/* portion grants access from any method on any resource
-  # within the API Gateway "REST API".
+  # the /*/* portion grants access from any method on any resource
+  # within the api gateway "rest api".
   source_arn = "${aws_api_gateway_rest_api.reddit.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "apigw2" {
+  statement_id  = "AllowAPIGatewayInvokeMore"
+  action        = "lambda:invokefunction"
+  function_name = "${aws_lambda_function.api.function_name}"
+  principal     = "apigateway.amazonaws.com"
+
+  # the /*/* portion grants access from any method on any resource
+  # within the api gateway "rest api".
+  source_arn = "${aws_api_gateway_rest_api.reddit.execution_arn}/*/*/*"
 }
 
 resource "aws_lambda_function" "api" {
@@ -46,7 +57,7 @@ resource "aws_lambda_function" "api" {
     variables = {
       POST_TABLE_NAME = aws_dynamodb_table.posts_table.name
       COMMENT_TABLE_NAME = aws_dynamodb_table.comments_table.name
-      POST_INDEX_NAME = "subreddit-timestamp-index" #aws_dynamodb_table.posts_table.global_secondary_index[0].name
+      POST_INDEX_NAME = "subreddit-timestamp-index"
     }
   }
 
@@ -83,7 +94,7 @@ resource "aws_api_gateway_integration" "lambda" {
   resource_id = "${aws_api_gateway_method.proxy.resource_id}"
   http_method = "${aws_api_gateway_method.proxy.http_method}"
 
-  integration_http_method = "GET"
+  integration_http_method = "ANY"
   type                    = "AWS_PROXY"
   uri                     = "${aws_lambda_function.api.invoke_arn}"
 }
@@ -100,15 +111,15 @@ resource "aws_api_gateway_integration" "lambda_root" {
   resource_id = "${aws_api_gateway_method.proxy_root.resource_id}"
   http_method = "${aws_api_gateway_method.proxy_root.http_method}"
 
-  integration_http_method = "GET"
+  integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = "${aws_lambda_function.api.invoke_arn}"
 }
 
 resource "aws_api_gateway_deployment" "reddit" {
   depends_on = [
-    "aws_api_gateway_integration.lambda",
-    "aws_api_gateway_integration.lambda_root",
+    aws_api_gateway_integration.lambda,
+    aws_api_gateway_integration.lambda_root,
   ]
 
   rest_api_id = "${aws_api_gateway_rest_api.reddit.id}"

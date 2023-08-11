@@ -138,11 +138,13 @@ resource "aws_iam_policy" "reddit_api_lambda_policy" {
     {
       "Effect": "Allow",
       "Action": [
-        "dynamodb:GetItem"
+        "dynamodb:GetItem",
+        "dynamodb:Query"
       ],
       "Resource": [
         "${aws_dynamodb_table.posts_table.arn}",
-        "${aws_dynamodb_table.comments_table.arn}"
+        "${aws_dynamodb_table.comments_table.arn}",
+        "${aws_dynamodb_table.posts_table.arn}/index/*"
       ]
     }
   ]
