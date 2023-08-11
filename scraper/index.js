@@ -60,6 +60,7 @@ async function parseComment(e) {
   let comments = [];
   for (const thing of things) {
     let thingClass = await things[0].getAttribute("class");
+    let id = await thing.getAttribute("data-fullname");
     let children = await parseComment(await thing.$(".child"));
     let isDeleted = thingClass.includes("deleted");
     let author = isDeleted
@@ -79,7 +80,7 @@ async function parseComment(e) {
     let points = parseInt(pointsText);
     points = isNaN(points) ? 0 : points;
 
-    comments.push({ author, time, comment, points, children, isDeleted });
+    comments.push({ id, author, time, comment, points, children, isDeleted });
   }
 
   return comments;
