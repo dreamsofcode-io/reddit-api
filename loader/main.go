@@ -8,9 +8,11 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/dreamsofcode-io/reddit-api/shared/database"
+	"github.com/dreamsofcode-io/reddit-api/shared/model"
 )
 
-func addPost(ctx context.Context, post Post, db *Database) error {
+func addPost(ctx context.Context, post model.Post, db *database.Database) error {
 	comments := post.Comments
 	post.Comments = nil
 
@@ -24,14 +26,14 @@ func addPost(ctx context.Context, post Post, db *Database) error {
 		return fmt.Errorf("failed to marshal comments: %w", err)
 	}
 
-	postRecord := PostRecord{
+	postRecord := model.PostRecord{
 		ID:        post.ID,
 		Subreddit: post.Subreddit,
 		Timestamp: post.TimestampMillis / 1000,
 		Data:      string(postData),
 	}
 
-	commentRecord := CommentRecord{
+	commentRecord := model.CommentRecord{
 		ID:   post.ID,
 		Data: string(commentData),
 	}
@@ -47,9 +49,10 @@ func addPost(ctx context.Context, post Post, db *Database) error {
 	return nil
 }
 
-func handle(ctx context.Context, event events.SQSEvent, db *Database) error {
+func handle(ctx context.Context, event events.SQSEvent, db *database.Database) error {
 	for _, record := range event.Records {
-		var post Post
+		var post model.Post
+
 		if err := json.Unmarshal([]byte(record.Body), &post); err != nil {
 			fmt.Println("Failed to unmarshal post: ", record.Body)
 			return fmt.Errorf("failed to unmarshal post: %w", err)
@@ -68,7 +71,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	db, err := NewDatabase(ctx)
+	db, err := database.NewDatabase(ctx)
 	if err != nil {
 		panic(err)
 	}
