@@ -4,8 +4,9 @@ resource "null_resource" "loader_lambda_dependencies" {
   }
 
   triggers = {
-    index = sha256(file("${path.module}/../loader/go.sum"))
-    go = sha256(join("",fileset(path.module, "../loader/*.go")))
+    index  = sha256(file("${path.module}/../loader/go.sum"))
+    go     = sha256(join("",fileset(path.module, "../loader/*.go")))
+    shared = sha256(join("",fileset(path.module, "../shared/**/*.go")))
   }
 }
 

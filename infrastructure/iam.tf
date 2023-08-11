@@ -108,3 +108,54 @@ resource "aws_iam_role_policy_attachment" "reddit_loader_lambda_policy_attachmen
   role       = aws_iam_role.reddit_loader_lambda_role.name
   policy_arn = aws_iam_policy.reddit_loader_lambda_policy.arn
 }
+
+# API lambda
+resource "aws_iam_role" "reddit_api_lambda_role" {
+  name = "reddit-api-lambda-role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": "sts:AssumeRole",
+    "Principal": {
+      "Service": "lambda.amazonaws.com"
+    }
+  }]
+}
+EOF
+}
+
+resource "aws_iam_policy" "reddit_api_lambda_policy" {
+  name        = "api-lambda-sqs-policy"
+  description = "IAM policy for API Lambda to access dynamodb"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem"
+      ],
+      "Resource": [
+        "${aws_dynamodb_table.posts_table.arn}",
+        "${aws_dynamodb_table.comments_table.arn}"
+      ]
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "reddit_api_lambda_basic_execution" {
+  role       = aws_iam_role.reddit_api_lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy_attachment" "reddit_api_lambda_policy_attachment" {
+  role       = aws_iam_role.reddit_api_lambda_role.name
+  policy_arn = aws_iam_policy.reddit_api_lambda_policy.arn
+}
