@@ -5,9 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 	"github.com/dreamsofcode-io/reddit-api/shared/database"
 	"github.com/dreamsofcode-io/reddit-api/shared/model"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -104,25 +108,7 @@ func main() {
 
 	}).Methods(http.MethodGet)
 
-	srv := &http.Server{
-		Addr:    ":3000",
-		Handler: router,
-	}
+	app := httpadapter.New(handlers.LoggingHandler(os.Stdout, router))
 
-	srv.ListenAndServe()
-
-	/*
-		app := gorillamux.New(router)
-
-			lambda.Start(
-				func(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-					r := core.NewSwitchableAPIGatewayRequestV1(&req)
-					fmt.Println("Request: ", req)
-					res, err := app.ProxyWithContext(ctx, *r)
-					fmt.Println("Response: ", *res.Version1())
-					fmt.Println("Error: ", err)
-					return *res.Version1(), err
-				},
-			)
-	*/
+	lambda.Start(app.ProxyWithContext)
 }

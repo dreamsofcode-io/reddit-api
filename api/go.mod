@@ -5,7 +5,10 @@ go 1.20
 replace github.com/dreamsofcode-io/reddit-api/shared => ../shared
 
 require (
+	github.com/aws/aws-lambda-go v1.41.0
+	github.com/awslabs/aws-lambda-go-api-proxy v0.14.0
 	github.com/dreamsofcode-io/reddit-api/shared v0.0.0-00010101000000-000000000000
+	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.7.4
 )
 
@@ -28,7 +31,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.15.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.21.2 // indirect
 	github.com/aws/smithy-go v1.14.1 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
