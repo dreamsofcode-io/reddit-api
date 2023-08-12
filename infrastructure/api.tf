@@ -20,28 +20,6 @@ data "archive_file" "api_zip" {
   ]
 }
 
-resource "aws_lambda_permission" "apigw" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:invokefunction"
-  function_name = "${aws_lambda_function.api.function_name}"
-  principal     = "apigateway.amazonaws.com"
-
-  # the /*/* portion grants access from any method on any resource
-  # within the api gateway "rest api".
-  source_arn = "${aws_api_gateway_rest_api.reddit.execution_arn}/*/*"
-}
-
-resource "aws_lambda_permission" "apigw2" {
-  statement_id  = "AllowAPIGatewayInvokeMore"
-  action        = "lambda:invokefunction"
-  function_name = "${aws_lambda_function.api.function_name}"
-  principal     = "apigateway.amazonaws.com"
-
-  # the /*/* portion grants access from any method on any resource
-  # within the api gateway "rest api".
-  source_arn = "${aws_api_gateway_rest_api.reddit.execution_arn}/*/*/*"
-}
-
 resource "aws_lambda_function" "api" {
   function_name    = "reddit-api"
   s3_bucket        = aws_s3_bucket.reddit-api-binary-bucket.id
@@ -94,7 +72,7 @@ resource "aws_api_gateway_integration" "lambda" {
   resource_id = "${aws_api_gateway_method.proxy.resource_id}"
   http_method = "${aws_api_gateway_method.proxy.http_method}"
 
-  integration_http_method = "ANY"
+  integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = "${aws_lambda_function.api.invoke_arn}"
 }
@@ -124,4 +102,26 @@ resource "aws_api_gateway_deployment" "reddit" {
 
   rest_api_id = "${aws_api_gateway_rest_api.reddit.id}"
   stage_name  = "prod"
+}
+
+resource "aws_lambda_permission" "apigw" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:invokefunction"
+  function_name = "${aws_lambda_function.api.function_name}"
+  principal     = "apigateway.amazonaws.com"
+
+  # the /*/* portion grants access from any method on any resource
+  # within the api gateway "rest api".
+  source_arn = "${aws_api_gateway_rest_api.reddit.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "apigw2" {
+  statement_id  = "AllowAPIGatewayInvokeMore"
+  action        = "lambda:invokefunction"
+  function_name = "${aws_lambda_function.api.function_name}"
+  principal     = "apigateway.amazonaws.com"
+
+  # the /*/* portion grants access from any method on any resource
+  # within the api gateway "rest api".
+  source_arn = "${aws_api_gateway_rest_api.reddit.execution_arn}/*/*/*"
 }

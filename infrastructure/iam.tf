@@ -161,3 +161,41 @@ resource "aws_iam_role_policy_attachment" "reddit_api_lambda_policy_attachment" 
   role       = aws_iam_role.reddit_api_lambda_role.name
   policy_arn = aws_iam_policy.reddit_api_lambda_policy.arn
 }
+
+resource "aws_iam_role" "api_gateway_role" {
+  name = "api-gateway-cloudwatch-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Action = "sts:AssumeRole",
+      Effect = "Allow",
+      Principal = {
+        Service = "apigateway.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_policy" "cloudwatch_logs_policy" {
+  name = "api-gateway-cloudwatch-logs-policy"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      Effect   = "Allow",
+      Resource = "*"
+    }]
+  })
+}
+
+resource "aws_iam_policy_attachment" "cloudwatch_logs_attachment" {
+  name       = "api-gateway-cloudwatch-logs-attachment"
+  roles      = [aws_iam_role.api_gateway_role.name]
+  policy_arn = aws_iam_policy.cloudwatch_logs_policy.arn
+}
