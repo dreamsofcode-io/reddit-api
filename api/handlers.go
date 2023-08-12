@@ -88,36 +88,22 @@ func getPost(db *database.Database) func(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		if err = json.NewEncoder(w).Encode(post); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Println("failed to encode post: ", err)
-			return
-		}
-	}
-}
-
-func getComments(db *database.Database) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		postID := vars["id"]
-
-		res, err := db.GetCommentsForPost(r.Context(), postID)
+		commentRow, err := db.GetCommentsForPost(r.Context(), postID)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Println("failed to get comments for post: ", err)
 			return
 		}
 
-		var comments []model.Comment
-		if err = json.Unmarshal([]byte(res.Data), &comments); err != nil {
+		if err = json.Unmarshal([]byte(commentRow.Data), &post.Comments); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Println("failed to unmarshal comment: ", err)
 			return
 		}
 
-		if err = json.NewEncoder(w).Encode(comments); err != nil {
+		if err = json.NewEncoder(w).Encode(post); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Println("failed to encode comments: ", err)
+			fmt.Println("failed to encode post: ", err)
 			return
 		}
 	}

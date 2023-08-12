@@ -23,7 +23,6 @@ func main() {
 	router.HandleFunc("/", helloWorld()).Methods(http.MethodGet)
 	router.HandleFunc("/r/{subreddit}", getSubreddit(db)).Methods(http.MethodGet)
 	router.HandleFunc("/posts/{id}", getPost(db)).Methods(http.MethodGet)
-	router.HandleFunc("/posts/{id}/comments", getComments(db)).Methods(http.MethodGet)
 
 	app := httpadapter.New(handlers.LoggingHandler(os.Stdout, router))
 
