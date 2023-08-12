@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,12 +17,32 @@ func helloWorld() func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getAfterTimestamp(ctx context.Context, db *database.Database, id string) (*uint64, error) {
+	if id == "" {
+		return nil, nil
+	}
+
+	row, err := db.GetPost(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get post: %w", err)
+	}
+
+	return &row.Timestamp, nil
+}
+
 func getSubreddit(db *database.Database) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		subreddit := fmt.Sprintf("r/%s", vars["subreddit"])
 
-		res, err := db.GetPostsForSubreddit(r.Context(), subreddit)
+		before, err := getAfterTimestamp(r.Context(), db, r.URL.Query().Get("after"))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Println("failed to get after timestamp: ", err)
+			return
+		}
+
+		res, err := db.GetPostsForSubreddit(r.Context(), subreddit, before)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Println("failed to get posts for subreddit: ", err)

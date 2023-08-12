@@ -78,9 +78,13 @@ func (d *Database) AddCommentRecord(ctx context.Context, comment model.CommentRe
 func (d *Database) GetPostsForSubreddit(
 	ctx context.Context,
 	subreddit string,
+	before *uint64,
 ) ([]model.PostRecord, error) {
 	fmt.Println("subreddit: ", subreddit)
 	keyEx := expression.Key("subreddit").Equal(expression.Value(subreddit))
+	if before != nil {
+		keyEx = keyEx.And(expression.Key("timestamp").LessThan(expression.Value(before)))
+	}
 
 	expr, err := expression.NewBuilder().WithKeyCondition(keyEx).Build()
 	if err != nil {
