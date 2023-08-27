@@ -26,6 +26,7 @@ const newBrowser = async () => {
 };
 
 async function getDataForPostsConcurrently(posts) {
+  logger.info("getting data for posts concurrently");
   return await Promise.all(
     posts.map(async (post) => {
       const browser = await newBrowser();
@@ -45,6 +46,7 @@ async function getDataForPostsConcurrently(posts) {
 }
 
 async function getDataForPosts(posts, page) {
+  logger.info("getting data for posts");
   let data = [];
   for (const post of posts) {
     let postData = await getPostData({ page, post });
@@ -135,6 +137,7 @@ async function getPostsOnPage(page) {
   let posts = [];
 
   for (const element of elements) {
+    logger.info("getting post");
     const id = await element.getAttribute("data-fullname");
     const subreddit = await element.getAttribute("data-subreddit-prefixed");
 
@@ -143,6 +146,7 @@ async function getPostsOnPage(page) {
       continue;
     }
 
+    logger.info("getting time");
     const dt = await time.getAttribute("datetime");
     const timestamp = Date.parse(dt);
     const author = await element.$eval(".author", (el) => el.innerText);
@@ -157,10 +161,10 @@ async function getPostsOnPage(page) {
 }
 
 async function main() {
-  console.log("launching browser...");
+  logger.info("launching browser...");
   const browser = await newBrowser();
 
-  console.log("connecting...");
+  logger.info("connecting...");
   const context = await browser.newContext();
   const page = await context.newPage();
 
@@ -193,12 +197,6 @@ async function main() {
   }
 
   posts = posts.filter((post) => post.timestamp > cutoff);
-
-  let data = [];
-  for (const post of posts) {
-    let postData = await getPostData({ page, post });
-    data.push(postData);
-  }
 
   if (connectionUrl) {
     await browser.close();

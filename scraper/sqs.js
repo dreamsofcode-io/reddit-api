@@ -1,4 +1,8 @@
-const { SQSClient, SendMessageBatchCommand } = require("@aws-sdk/client-sqs");
+const {
+  SQSClient,
+  SendMessageBatchCommand,
+  SendMessageCommand,
+} = require("@aws-sdk/client-sqs");
 
 const client = new SQSClient({ region: "us-east-1" });
 const queueURL = process.env.QUEUE_URL;
@@ -15,7 +19,7 @@ async function publishChunk(chunk) {
 exports.publishOne = async function (post) {
   const command = new SendMessageCommand({
     QueueUrl: queueURL,
-    MessageBody: JSON.stringify(msg),
+    MessageBody: JSON.stringify(post),
     Id: post.id,
   });
 
