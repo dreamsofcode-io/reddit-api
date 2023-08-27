@@ -110,8 +110,6 @@ resource "aws_lambda_permission" "apigw" {
   function_name = "${aws_lambda_function.api.function_name}"
   principal     = "apigateway.amazonaws.com"
 
-  # the /*/* portion grants access from any method on any resource
-  # within the api gateway "rest api".
   source_arn = "${aws_api_gateway_rest_api.reddit.execution_arn}/*/*"
 }
 
@@ -121,7 +119,5 @@ resource "aws_lambda_permission" "apigw2" {
   function_name = "${aws_lambda_function.api.function_name}"
   principal     = "apigateway.amazonaws.com"
 
-  # the /*/* portion grants access from any method on any resource
-  # within the api gateway "rest api".
   source_arn = "${aws_api_gateway_rest_api.reddit.execution_arn}/*/*/*"
 }

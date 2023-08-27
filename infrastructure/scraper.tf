@@ -28,8 +28,8 @@ resource "aws_lambda_function" "scraper_lambda" {
   runtime          = "nodejs18.x"
   handler          = "index.handler"
   role             = aws_iam_role.reddit_scraper_lambda_role.arn
-  memory_size      = var.connection_url == "" ? 1024 : 256
-  timeout          = var.connection_url == "" ? 900 : 900  
+  memory_size      = var.connection_url == null ? 1024 : 256
+  timeout          = 900
   source_code_hash = data.archive_file.scraper_zip.output_base64sha256
 
   environment  {
