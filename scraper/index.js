@@ -6,7 +6,7 @@ const chromium = require("@sparticuz/chromium");
 
 const connectionUrl = process.env.CONNECTION_URL;
 
-let allPosts = [];
+let allPosts = {};
 
 const addPageInterceptors = async (page) => {
   await page.route("**/*", (route) => {
